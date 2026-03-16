@@ -13,6 +13,7 @@ function App() {
   const [submissionId, setSubmissionId] = createSignal<string | null>(null);
   const [answers, setAnswers] = createSignal<Record<string, unknown>>({});
   const [step, setStep] = createSignal(0);
+  const [currentStep, setCurrentStep] = createSignal(0);
 
   onMount(async () => {
     try {
@@ -25,7 +26,9 @@ function App() {
           const firstUnanswered = questions.findIndex(
             (q) => !submission.answers[q.id]
           );
-          setStep(firstUnanswered === -1 ? questions.length : firstUnanswered);
+          const resumeStep = firstUnanswered === -1 ? questions.length : firstUnanswered;
+          setStep(resumeStep);
+          setCurrentStep(resumeStep);
         } else {
           setError("Submission not found");
         }
@@ -67,9 +70,19 @@ function App() {
 
   const next = () => {
     if (step() < questions.length) {
-      setStep(step() + 1);
+      const newStep = step() + 1;
+      setStep(newStep);
+      if (newStep > currentStep()) {
+        setCurrentStep(newStep);
+      }
     }
   };
+
+  const jumpToCurrent = () => {
+    setStep(currentStep());
+  };
+
+  const isReviewing = () => step() < currentStep();
 
   const back = () => {
     if (step() > 0) {
@@ -117,7 +130,7 @@ function App() {
             onAnswer={handleAnswer}
           />
 
-          <div class="flex justify-between mt-8">
+          <div class="flex justify-between items-center mt-8">
             <button
               type="button"
               onClick={back}
@@ -126,6 +139,17 @@ function App() {
             >
               Back
             </button>
+
+            <Show when={isReviewing()}>
+              <button
+                type="button"
+                onClick={jumpToCurrent}
+                class="px-4 py-2 text-indigo-600 hover:underline"
+              >
+                Return to Question {currentStep() + 1}
+              </button>
+            </Show>
+
             <button
               type="button"
               onClick={next}
