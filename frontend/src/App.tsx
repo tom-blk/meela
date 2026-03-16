@@ -1,6 +1,8 @@
 import { createSignal, onMount, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
-import { createSubmission, getSubmission } from "./api";
+import { createSubmission, getSubmission, updateSubmission } from "./api";
+import { questions } from "./questions";
+import Question from "./Question";
 
 function App() {
   const params = useParams();
@@ -10,6 +12,7 @@ function App() {
   const [error, setError] = createSignal<string | null>(null);
   const [submissionId, setSubmissionId] = createSignal<string | null>(null);
   const [answers, setAnswers] = createSignal<Record<string, unknown>>({});
+  const [step, setStep] = createSignal(0);
 
   onMount(async () => {
     try {
@@ -18,6 +21,11 @@ function App() {
         if (submission) {
           setSubmissionId(submission.id);
           setAnswers(submission.answers);
+          // Resume at first unanswered question
+          const firstUnanswered = questions.findIndex(
+            (q) => !submission.answers[q.id]
+          );
+          setStep(firstUnanswered === -1 ? questions.length : firstUnanswered);
         } else {
           setError("Submission not found");
         }
@@ -33,9 +41,48 @@ function App() {
     }
   });
 
+  const saveAnswer = async (key: string, value: unknown) => {
+    const id = submissionId();
+    if (!id) return;
+
+    const newAnswers = { ...answers(), [key]: value };
+    setAnswers(newAnswers);
+
+    try {
+      await updateSubmission(id, newAnswers);
+    } catch (e) {
+      console.error("Failed to save:", e);
+    }
+  };
+
+  const currentQuestion = () => questions[step()];
+  const isComplete = () => step() >= questions.length;
+  const progress = () => Math.round((step() / questions.length) * 100);
+
+  const handleAnswer = (value: string | string[]) => {
+    const q = currentQuestion();
+    if (!q) return;
+    saveAnswer(q.id, value);
+  };
+
+  const next = () => {
+    if (step() < questions.length) {
+      setStep(step() + 1);
+    }
+  };
+
+  const back = () => {
+    if (step() > 0) {
+      setStep(step() - 1);
+    }
+  };
+
   return (
     <div class="max-w-2xl mx-auto p-8">
-      <h1 class="text-3xl font-semibold mb-6">Client Intake Form</h1>
+      <h1 class="text-3xl font-semibold mb-2">Client Intake Form</h1>
+      <p class="text-sm text-gray-400 mb-6">
+        Your progress is saved automatically
+      </p>
 
       <Show when={loading()}>
         <p class="text-gray-500">Loading...</p>
@@ -46,15 +93,66 @@ function App() {
       </Show>
 
       <Show when={!loading() && !error() && submissionId()}>
-        <p class="text-sm text-gray-500">Submission ID: {submissionId()}</p>
-        <p class="text-sm text-gray-400 mb-8">
-          Bookmark this page to resume later
-        </p>
+        {/* Progress bar */}
+        <div class="mb-8">
+          <div class="flex justify-between text-sm text-gray-500 mb-1">
+            <span>
+              Question {Math.min(step() + 1, questions.length)} of{" "}
+              {questions.length}
+            </span>
+            <span>{progress()}% complete</span>
+          </div>
+          <div class="h-2 bg-gray-200 rounded-full">
+            <div
+              class="h-2 bg-indigo-600 rounded-full transition-all"
+              style={{ width: `${progress()}%` }}
+            />
+          </div>
+        </div>
 
-        {/* Form questions will be added in next stage */}
-        <pre class="bg-gray-100 p-4 rounded overflow-x-auto text-sm">
-          {JSON.stringify(answers(), null, 2)}
-        </pre>
+        <Show when={!isComplete()}>
+          <Question
+            question={currentQuestion()!}
+            value={answers()[currentQuestion()!.id] as string | string[]}
+            onAnswer={handleAnswer}
+          />
+
+          <div class="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={back}
+              disabled={step() === 0}
+              class="px-4 py-2 text-gray-600 disabled:opacity-50"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              {step() === questions.length - 1 ? "Complete" : "Next"}
+            </button>
+          </div>
+        </Show>
+
+        <Show when={isComplete()}>
+          <div class="text-center py-8">
+            <h2 class="text-2xl font-semibold text-green-600 mb-4">
+              Thank you!
+            </h2>
+            <p class="text-gray-600 mb-6">
+              Your responses have been saved. We'll be in touch soon.
+            </p>
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              class="text-indigo-600 hover:underline"
+            >
+              Review your answers
+            </button>
+          </div>
+        </Show>
       </Show>
     </div>
   );
