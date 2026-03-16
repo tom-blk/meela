@@ -11,7 +11,7 @@ use poem::{
     web::{Data, Json, Path},
 };
 use serde::Serialize;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
@@ -33,8 +33,8 @@ impl ResponseError for Error {
     }
 }
 
-async fn init_pool() -> Result<SqlitePool, Error> {
-    let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
+async fn init_pool() -> Result<PgPool, Error> {
+    let pool = PgPool::connect(&env::var("DATABASE_URL")?).await?;
     Ok(pool)
 }
 
@@ -45,17 +45,15 @@ struct HelloResponse {
 
 #[handler]
 async fn hello(
-    Data(pool): Data<&SqlitePool>,
+    Data(pool): Data<&PgPool>,
     Path(name): Path<String>,
 ) -> Result<Json<HelloResponse>, Error> {
-    let r = sqlx::query!("select concat('Hello ', $1) as hello", name)
+    let r: (String,) = sqlx::query_as("SELECT concat('Hello ', $1)")
+        .bind(&name)
         .fetch_one(pool)
         .await?;
-    let Some(hello) = r.hello else {
-        Err(Error::QueryFailed)?
-    };
 
-    Ok(Json(HelloResponse { hello }))
+    Ok(Json(HelloResponse { hello: r.0 }))
 }
 
 #[tokio::main]
