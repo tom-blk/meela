@@ -1,4 +1,5 @@
 import { For, Show, createSignal, createEffect, createMemo } from "solid-js";
+import { Icon } from "@iconify-icon/solid";
 import type { Question } from "./api";
 
 interface Props {
@@ -70,37 +71,27 @@ export default function QuestionComponent(props: Props) {
   return (
     <div class="mb-8">
       <div class="flex items-start gap-2 mb-2">
-        <h2 class="text-xl font-medium">{props.question.text}</h2>
+        <h2 class="text-xl font-medium text-text-primary">
+          {props.question.text}
+        </h2>
         <Show when={props.question.info}>
           <button
             type="button"
             onClick={() => setShowInfo(!showInfo())}
-            class="text-gray-400 hover:text-gray-600 mt-1"
+            class="text-text-muted hover:text-text-secondary mt-1 transition-colors"
             title="More information"
           >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <Icon icon="feather:info" width="20" height="20" class="block" />
           </button>
         </Show>
       </div>
 
       <Show when={props.question.subtitle}>
-        <p class="text-sm text-gray-500 mb-3">{props.question.subtitle}</p>
+        <p class="text-sm text-text-tertiary mb-3">{props.question.subtitle}</p>
       </Show>
 
       <Show when={showInfo() && props.question.info}>
-        <div class="bg-blue-50 text-blue-800 text-sm p-3 rounded-lg mb-4">
+        <div class="bg-bg-info text-text-info text-sm p-3 rounded-lg mb-4">
           {props.question.info}
         </div>
       </Show>
@@ -111,7 +102,7 @@ export default function QuestionComponent(props: Props) {
           placeholder="Search options..."
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
-          class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="w-full px-4 py-2 mb-4 bg-input-bg border border-input-border rounded-lg text-text-primary placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring transition-colors"
         />
       </Show>
 
@@ -124,10 +115,10 @@ export default function QuestionComponent(props: Props) {
               disabled={!isSelected(option) && maxReached()}
               class={`px-4 py-2 rounded-full border transition-colors ${
                 isSelected(option)
-                  ? "bg-indigo-600 text-white border-indigo-600"
+                  ? "bg-chip-selected-bg text-chip-selected-text border-chip-selected-border"
                   : maxReached()
-                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400"
+                    ? "bg-chip-disabled-bg text-chip-disabled-text border-chip-disabled-border cursor-not-allowed"
+                    : "bg-chip-default-bg text-chip-default-text border-chip-default-border hover:border-chip-default-hover-border"
               }`}
             >
               {option}
@@ -137,11 +128,11 @@ export default function QuestionComponent(props: Props) {
       </div>
 
       <Show when={showSearch() && filteredOptions().length === 0}>
-        <p class="text-gray-500 mt-2">No options match your search</p>
+        <p class="text-text-tertiary mt-2">No options match your search</p>
       </Show>
 
       <Show when={props.question.max_selections !== null}>
-        <p class="text-sm text-gray-400 mt-3">
+        <p class="text-sm text-text-muted mt-3">
           {selected().length} / {props.question.max_selections} selected
         </p>
       </Show>

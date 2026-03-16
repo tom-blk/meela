@@ -8,6 +8,7 @@ import {
   type Question as QuestionType,
 } from "./api";
 import Question from "./Question";
+import { ThemeToggle } from "./theme";
 
 function App() {
   const params = useParams();
@@ -104,93 +105,101 @@ function App() {
   };
 
   return (
-    <div class="max-w-2xl mx-auto p-8">
-      <h1 class="text-3xl font-semibold mb-2">Client Intake Form</h1>
-      <p class="text-sm text-gray-400 mb-6">
-        Your progress is saved automatically
-      </p>
-
-      <Show when={loading()}>
-        <p class="text-gray-500">Loading...</p>
-      </Show>
-
-      <Show when={error()}>
-        <p class="text-red-600 bg-red-50 p-4 rounded">{error()}</p>
-      </Show>
-
-      <Show when={!loading() && !error() && submissionId()}>
-        {/* Progress bar */}
-        <div class="mb-8">
-          <div class="flex justify-between text-sm text-gray-500 mb-1">
-            <span>
-              Question {Math.min(step() + 1, questions().length)} of{" "}
-              {questions().length}
-            </span>
-            <span>{progress()}% complete</span>
-          </div>
-          <div class="h-2 bg-gray-200 rounded-full">
-            <div
-              class="h-2 bg-indigo-600 rounded-full transition-all"
-              style={{ width: `${progress()}%` }}
-            />
-          </div>
+    <div class="min-h-screen bg-bg-primary transition-colors">
+      <div class="max-w-2xl mx-auto p-8">
+        {/* Header with theme toggle */}
+        <div class="flex justify-between items-start mb-2">
+          <h1 class="text-3xl font-semibold text-text-primary">
+            Client Intake Form
+          </h1>
+          <ThemeToggle />
         </div>
+        <p class="text-sm text-text-muted mb-6">
+          Your progress is saved automatically
+        </p>
 
-        <Show when={!isComplete()}>
-          <Question
-            question={currentQuestion()!}
-            value={answers()[currentQuestion()!.id] as string | string[]}
-            onAnswer={handleAnswer}
-          />
+        <Show when={loading()}>
+          <p class="text-text-tertiary">Loading...</p>
+        </Show>
 
-          <div class="flex justify-between items-center mt-8">
-            <button
-              type="button"
-              onClick={back}
-              disabled={step() === 0}
-              class="px-4 py-2 text-gray-600 disabled:opacity-50"
-            >
-              Back
-            </button>
+        <Show when={error()}>
+          <p class="text-text-error bg-bg-error p-4 rounded-lg">{error()}</p>
+        </Show>
 
-            <Show when={isReviewing()}>
+        <Show when={!loading() && !error() && submissionId()}>
+          {/* Progress bar */}
+          <div class="mb-8">
+            <div class="flex justify-between text-sm text-text-tertiary mb-1">
+              <span>
+                Question {Math.min(step() + 1, questions().length)} of{" "}
+                {questions().length}
+              </span>
+              <span>{progress()}% complete</span>
+            </div>
+            <div class="h-2 bg-progress-bg rounded-full">
+              <div
+                class="h-2 bg-progress-fill rounded-full transition-all"
+                style={{ width: `${progress()}%` }}
+              />
+            </div>
+          </div>
+
+          <Show when={!isComplete()}>
+            <Question
+              question={currentQuestion()!}
+              value={answers()[currentQuestion()!.id] as string | string[]}
+              onAnswer={handleAnswer}
+            />
+
+            <div class="flex justify-between items-center mt-8">
               <button
                 type="button"
-                onClick={jumpToCurrent}
-                class="px-4 py-2 text-indigo-600 hover:underline"
+                onClick={back}
+                disabled={step() === 0}
+                class="px-4 py-2 text-text-secondary border border-border-secondary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:text-text-primary hover:border-border-primary transition-colors"
               >
-                Return to Question {currentStep() + 1}
+                Back
               </button>
-            </Show>
 
-            <button
-              type="button"
-              onClick={next}
-              class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              {step() === questions().length - 1 ? "Complete" : "Next"}
-            </button>
-          </div>
-        </Show>
+              <Show when={isReviewing()}>
+                <button
+                  type="button"
+                  onClick={jumpToCurrent}
+                  class="px-4 py-2 text-link hover:text-link-hover hover:underline transition-colors"
+                >
+                  Return to Question {currentStep() + 1}
+                </button>
+              </Show>
 
-        <Show when={isComplete()}>
-          <div class="text-center py-8">
-            <h2 class="text-2xl font-semibold text-green-600 mb-4">
-              Thank you!
-            </h2>
-            <p class="text-gray-600 mb-6">
-              Your responses have been saved. We'll be in touch soon.
-            </p>
-            <button
-              type="button"
-              onClick={() => setStep(0)}
-              class="text-indigo-600 hover:underline"
-            >
-              Review your answers
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={next}
+                class="px-6 py-2 bg-btn-primary-bg text-btn-primary-text rounded-lg hover:bg-btn-primary-bg-hover transition-colors focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:ring-offset-2 focus:ring-offset-bg-primary"
+              >
+                {step() === questions().length - 1 ? "Complete" : "Next"}
+              </button>
+            </div>
+          </Show>
+
+          <Show when={isComplete()}>
+            <div class="text-center py-8">
+              <h2 class="text-2xl font-semibold text-text-success mb-4">
+                Thank you!
+              </h2>
+              <p class="text-text-secondary mb-6">
+                Your responses have been saved. We'll be in touch soon.
+              </p>
+              <button
+                type="button"
+                onClick={() => setStep(0)}
+                class="text-link hover:text-link-hover hover:underline transition-colors"
+              >
+                Review your answers
+              </button>
+            </div>
+          </Show>
         </Show>
-      </Show>
+      </div>
     </div>
   );
 }

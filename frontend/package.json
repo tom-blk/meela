@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iconify-icon/solid": "^3.0.3",
     "@solidjs/router": "^0.15.4",
     "solid-js": "^1.9.11"
   },

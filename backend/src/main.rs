@@ -5,9 +5,12 @@ use poem::{
     EndpointExt, Route, Server,
     endpoint::{StaticFileEndpoint, StaticFilesEndpoint},
     error::ResponseError,
-    get, handler, post,
-    http::StatusCode,
+    get, handler,
+    http::Method,
     listener::TcpListener,
+    middleware::Cors,
+    post,
+    http::StatusCode,
     web::{Data, Json, Path},
 };
 use serde::{Deserialize, Serialize};
@@ -164,6 +167,10 @@ async fn main() -> Result<(), Error> {
 
     info!("Initialize db pool");
     let pool = init_pool().await?;
+    let cors = Cors::new()
+        .allow_methods([Method::GET, Method::POST, Method::PATCH])
+        .allow_credentials(false);
+
     let app = Route::new()
         .at("/api/hello/:name", get(hello))
         .at("/api/questions", get(get_questions))
@@ -175,6 +182,7 @@ async fn main() -> Result<(), Error> {
         .at("/favicon.ico", StaticFileEndpoint::new("www/favicon.ico"))
         .nest("/static/", StaticFilesEndpoint::new("www"))
         .at("*", StaticFileEndpoint::new("www/index.html"))
+        .with(cors)
         .data(pool);
     Server::new(TcpListener::bind("0.0.0.0:3005"))
         .run(app)
