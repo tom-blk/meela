@@ -1,4 +1,4 @@
-import { For, createSignal, createEffect } from "solid-js";
+import { For, Show, createSignal, createEffect, createMemo } from "solid-js";
 import type { Question } from "./questions";
 
 interface Props {
@@ -7,8 +7,11 @@ interface Props {
   onAnswer: (value: string | string[]) => void;
 }
 
+const SEARCH_THRESHOLD = 6;
+
 export default function QuestionComponent(props: Props) {
   const [selected, setSelected] = createSignal<string[]>([]);
+  const [search, setSearch] = createSignal("");
 
   createEffect(() => {
     const val = props.value;
@@ -19,6 +22,22 @@ export default function QuestionComponent(props: Props) {
     } else {
       setSelected([]);
     }
+  });
+
+  createEffect(() => {
+    // Reset search when question changes
+    props.question.id;
+    setSearch("");
+  });
+
+  const showSearch = () => props.question.options.length >= SEARCH_THRESHOLD;
+
+  const filteredOptions = createMemo(() => {
+    const query = search().toLowerCase().trim();
+    if (!query) return props.question.options;
+    return props.question.options.filter((o) =>
+      o.toLowerCase().includes(query)
+    );
   });
 
   const toggle = (option: string) => {
@@ -43,8 +62,19 @@ export default function QuestionComponent(props: Props) {
       {props.question.type === "multiple" && (
         <p class="text-sm text-gray-500 mb-3">Select all that apply</p>
       )}
+
+      <Show when={showSearch()}>
+        <input
+          type="text"
+          placeholder="Search options..."
+          value={search()}
+          onInput={(e) => setSearch(e.currentTarget.value)}
+          class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </Show>
+
       <div class="flex flex-wrap gap-2">
-        <For each={props.question.options}>
+        <For each={filteredOptions()}>
           {(option) => (
             <button
               type="button"
@@ -60,6 +90,10 @@ export default function QuestionComponent(props: Props) {
           )}
         </For>
       </div>
+
+      <Show when={showSearch() && filteredOptions().length === 0}>
+        <p class="text-gray-500 mt-2">No options match your search</p>
+      </Show>
     </div>
   );
 }
