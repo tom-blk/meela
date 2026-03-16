@@ -1,7 +1,12 @@
 import { createSignal, onMount, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
-import { createSubmission, getSubmission, updateSubmission } from "./api";
-import { questions } from "./questions";
+import {
+  createSubmission,
+  getSubmission,
+  updateSubmission,
+  getQuestions,
+  type Question as QuestionType,
+} from "./api";
 import Question from "./Question";
 
 function App() {
@@ -12,21 +17,26 @@ function App() {
   const [error, setError] = createSignal<string | null>(null);
   const [submissionId, setSubmissionId] = createSignal<string | null>(null);
   const [answers, setAnswers] = createSignal<Record<string, unknown>>({});
+  const [questions, setQuestions] = createSignal<QuestionType[]>([]);
   const [step, setStep] = createSignal(0);
   const [currentStep, setCurrentStep] = createSignal(0);
 
   onMount(async () => {
     try {
+      const fetchedQuestions = await getQuestions();
+      setQuestions(fetchedQuestions);
+
       if (params.id) {
         const submission = await getSubmission(params.id);
         if (submission) {
           setSubmissionId(submission.id);
           setAnswers(submission.answers);
           // Resume at first unanswered question
-          const firstUnanswered = questions.findIndex(
+          const firstUnanswered = fetchedQuestions.findIndex(
             (q) => !submission.answers[q.id]
           );
-          const resumeStep = firstUnanswered === -1 ? questions.length : firstUnanswered;
+          const resumeStep =
+            firstUnanswered === -1 ? fetchedQuestions.length : firstUnanswered;
           setStep(resumeStep);
           setCurrentStep(resumeStep);
         } else {
@@ -58,9 +68,12 @@ function App() {
     }
   };
 
-  const currentQuestion = () => questions[step()];
-  const isComplete = () => step() >= questions.length;
-  const progress = () => Math.round((step() / questions.length) * 100);
+  const currentQuestion = () => questions()[step()];
+  const isComplete = () => step() >= questions().length;
+  const progress = () =>
+    questions().length > 0
+      ? Math.round((step() / questions().length) * 100)
+      : 0;
 
   const handleAnswer = (value: string | string[]) => {
     const q = currentQuestion();
@@ -69,7 +82,7 @@ function App() {
   };
 
   const next = () => {
-    if (step() < questions.length) {
+    if (step() < questions().length) {
       const newStep = step() + 1;
       setStep(newStep);
       if (newStep > currentStep()) {
@@ -110,8 +123,8 @@ function App() {
         <div class="mb-8">
           <div class="flex justify-between text-sm text-gray-500 mb-1">
             <span>
-              Question {Math.min(step() + 1, questions.length)} of{" "}
-              {questions.length}
+              Question {Math.min(step() + 1, questions().length)} of{" "}
+              {questions().length}
             </span>
             <span>{progress()}% complete</span>
           </div>
@@ -155,7 +168,7 @@ function App() {
               onClick={next}
               class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
-              {step() === questions.length - 1 ? "Complete" : "Next"}
+              {step() === questions().length - 1 ? "Complete" : "Next"}
             </button>
           </div>
         </Show>

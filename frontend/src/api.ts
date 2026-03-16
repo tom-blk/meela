@@ -1,8 +1,24 @@
 const API_BASE = "/api";
 
+export interface Question {
+  id: string;
+  text: string;
+  subtitle: string | null;
+  info: string | null;
+  type: "single" | "multiple";
+  options: string[];
+  max_selections: number | null;
+}
+
 export interface Submission {
   id: string;
   answers: Record<string, unknown>;
+}
+
+export async function getQuestions(): Promise<Question[]> {
+  const res = await fetch(`${API_BASE}/questions`);
+  if (!res.ok) throw new Error("Failed to fetch questions");
+  return res.json();
 }
 
 export async function createSubmission(): Promise<Submission> {

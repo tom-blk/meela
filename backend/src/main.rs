@@ -61,6 +61,42 @@ async fn hello(
 }
 
 #[derive(Serialize)]
+struct Question {
+    id: String,
+    text: String,
+    subtitle: Option<String>,
+    info: Option<String>,
+    r#type: String,
+    options: serde_json::Value,
+    max_selections: Option<i32>,
+}
+
+#[handler]
+async fn get_questions(Data(pool): Data<&PgPool>) -> Result<Json<Vec<Question>>, Error> {
+    let rows: Vec<(String, String, Option<String>, Option<String>, String, serde_json::Value, Option<i32>)> =
+        sqlx::query_as(
+            "SELECT id, text, subtitle, info, type, options, max_selections FROM questions ORDER BY sort_order"
+        )
+        .fetch_all(pool)
+        .await?;
+
+    let questions = rows
+        .into_iter()
+        .map(|(id, text, subtitle, info, r#type, options, max_selections)| Question {
+            id,
+            text,
+            subtitle,
+            info,
+            r#type,
+            options,
+            max_selections,
+        })
+        .collect();
+
+    Ok(Json(questions))
+}
+
+#[derive(Serialize)]
 struct Submission {
     id: Uuid,
     answers: serde_json::Value,
@@ -130,6 +166,7 @@ async fn main() -> Result<(), Error> {
     let pool = init_pool().await?;
     let app = Route::new()
         .at("/api/hello/:name", get(hello))
+        .at("/api/questions", get(get_questions))
         .at("/api/submissions", post(create_submission))
         .at(
             "/api/submissions/:id",
