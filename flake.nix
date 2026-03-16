@@ -24,7 +24,6 @@
             rust
             pkgs.nodejs_20
             pkgs.postgresql_16
-            pkgs.docker-compose
             pkgs.just
             pkgs.sqlx-cli
           ];

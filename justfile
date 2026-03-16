@@ -1,10 +1,10 @@
 # Start postgres
 db:
-    docker-compose up -d postgres
+    docker compose up -d postgres
 
 # Stop postgres
 db-stop:
-    docker-compose down
+    docker compose down
 
 # Run database migrations
 migrate:
