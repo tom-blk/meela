@@ -44,6 +44,7 @@ To make this production-ready, I'd probably make a few additional adjustments:
 - add a toasting library for errors
 - slim down dependencies
 - graceful shutdown
+- add a more robust error handling system
 
 Additional Note: When opening the frontend a new uuid URL parameter will be generated, if switching or clearing the database and refreshing, an error will be thrown because the database doesn't recognize the uuid left over in the URL parameter.
 
