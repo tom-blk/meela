@@ -1,73 +1,46 @@
-# Take-home task: Client Onboarding Form
+# Summary
 
-## Background
+## Stack
+- Solid.js (Typescript, Tailwind)
+- Rust (Poem)
+- Postgres
 
-At Meela, we help match clients to therapists, but first clients need to complete comprehensive intake forms. These
-forms are complex with multiple sections and sensitive mental health questions requiring careful UX.
+## Features
+- Multi-step form with automatic save to database on every answer
+- Light / dark theme
+- Ability to navigate freely between questions and return to the latest in the list
+- The form can be resumed after refreshing the page or closing the browser
 
-The forms can take some time to get through. The reality is that sometimes life will demand immediate attention from our
-users such that they do not complete the form in a single sitting and they would benefit from having a partial form
-submission to return to. And that is the crux of this task.
+## Usage
 
-## Objective
+### Justfile
+Run `just dev`, dependencies are:
+- just
+- postgres 16+
+- rust / cargo
+- node.js / npm
+- sqlx-cli
 
-Build a _simple_ client intake form system that supports **partial form submission** with the ability to resume later.
-Like, really simple. Proof-of-concept level. Don't worry about edge-cases or validation. Visit [our
-site](https://app.meelahealth.com) and cherry pick a small amount of different questions that make up your form.
+The app will be available at http://localhost:5173
 
-**The main goal**: A user should be able to fill out part of a form, save their progress, and return later to continue
-where they left off.
+### Nix
+Run `nix develop` then `meela dev` - no dependencies. (I know this is likely not going to be used, but I am on nixos and I'll include it for the sake of completeness)
 
-Dos:
+The app will be available at http://localhost:5173
 
-1. **Fork our repo!**
-2. **Multi-step form** at least 3 questions.
-3. **Save progress** - user can save and exit at any point - this can happen automatically, using a timer, or a button.
-   All are fine.
-4. **Resume capability** - user can return and continue from where they left off
-5. **Please play to your strengths** - if you feel that you are more front-end than backend lean into that and vice versa!
-6. **Commit screenshots** - commit some screenshots of how your application looks.
+## Screenshots
+The screenshots can be found in screenshots/
 
-Don'ts:
+## Additional Notes
+The style is chosen to follow UI/UX best practices, but also kept simple to be highly adaptable.
 
-1. **No auth required** - having a UUID in a URL is super-good enough!
-2. **No versioning required** - don't worry about handling form schema changes.
-3. **No i18n!** - overkill!
+I assumed that the rule excluding localStorage as an option to store the state covers cookies and indexedDb as well.
 
-**Time Estimate:** spend _max_ 4-6 hours, please.
+Since I have a background in both rust and frontend development I put equal focus on the frontend and the backend.
 
-If you do not finish in this time, stop! We can talk about what you did manage to accomplish in that time!
-
-## Technology Stack
-
-**Frontend**: Use React or Solid.js (your choice)
-
-**Backend**: Feel free to use the provided Rust code in the `/backend` directory - or butcher it and take what you need.
-We do take into account your prior experience with Rust so if you don't have any: do not worry, we will adapt our
-evaluation accordingly.
-
-**Database**: Must use a database (relational or NoSQL - your choice really and then you might have to make some other
-choices than what has been made in the `/backend` directory)
-
-**API**: GraphQL or REST (your choice)
-
-**Requirements**:
-
-- Frontend must communicate with a backend
-- Backend must persist data to a database
-  - That means you should **not** save the partial submissions using `localStorage` in the browser!
-
-## Deliverables
-
-1. Make the thing work
-2. Tell us how to set it up and run it so we can review it:
-   1. Either write a `.txt`/`.md` file that tells us which invocations of `cargo run`, `npm run dev`, `yarn dev`, ... we have to use, or
-   2. simply provide a `justfile`/`Makefile` for us.
-3. Add some screenshots showcasing the UI
-4. Send us a link to your fork on your Github account!
-
-## GO GO GO! 🌶️🌶️🌶️
-
-**Remember**, focus on the core "resume" functionality - that is what we are evaluating. And again, please play to your strengths. If you
-feel that you are more front-end than backend lean into that and vice versa. Feel free to leave a little note in your fork about which
-one you decided to put more effort into to make it easier for us when reviewing. We look forward to catching up and reviewing your submission!
+To make this production-ready, I'd probably make a few additional adjustments:
+- at the moment, users can skip questions, depending how the data gets processed later, this should be prevented
+- use tanstack-router on the frontend
+- use tanstack-query on the frontend
+- use axum on the backend (what I am used to, but I have never used poem before and was curious)
+- add a toasting library for errors
