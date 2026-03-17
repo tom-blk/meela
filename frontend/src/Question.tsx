@@ -6,6 +6,7 @@ interface Props {
   question: Question;
   value: string | string[] | undefined;
   onAnswer: (value: string | string[]) => void;
+  disabled?: boolean;
 }
 
 const SEARCH_THRESHOLD = 6;
@@ -49,6 +50,7 @@ export default function QuestionComponent(props: Props) {
   };
 
   const toggle = (option: string) => {
+    if (props.disabled) return;
     if (props.question.type === "single") {
       setSelected([option]);
       props.onAnswer(option);
@@ -102,7 +104,8 @@ export default function QuestionComponent(props: Props) {
           placeholder="Search options..."
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
-          class="w-full px-4 py-2 mb-4 bg-input-bg border border-input-border rounded-lg text-text-primary placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring transition-colors"
+          disabled={props.disabled}
+          class="w-full px-4 py-2 mb-4 bg-input-bg border border-input-border rounded-lg text-text-primary placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-input-focus-ring transition-colors disabled:opacity-50"
         />
       </Show>
 
@@ -112,11 +115,11 @@ export default function QuestionComponent(props: Props) {
             <button
               type="button"
               onClick={() => toggle(option)}
-              disabled={!isSelected(option) && maxReached()}
+              disabled={props.disabled || (!isSelected(option) && maxReached())}
               class={`px-4 py-2 rounded-full border transition-colors ${
                 isSelected(option)
                   ? "bg-chip-selected-bg text-chip-selected-text border-chip-selected-border"
-                  : maxReached()
+                  : props.disabled || maxReached()
                     ? "bg-chip-disabled-bg text-chip-disabled-text border-chip-disabled-border cursor-not-allowed"
                     : "bg-chip-default-bg text-chip-default-text border-chip-default-border hover:border-chip-default-hover-border"
               }`}

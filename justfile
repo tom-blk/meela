@@ -1,12 +1,39 @@
+# Requirements: postgres, cargo, npm, sqlx-cli
+
+set dotenv-load
+
+pgdata := ".pgdata"
+
 # Start postgres
 db:
-    docker compose up -d postgres
+    #!/usr/bin/env bash
+    export PGDATA="{{pgdata}}"
+    if [ ! -d "$PGDATA" ]; then
+        echo "Initializing postgres data directory..."
+        initdb -D "$PGDATA" --no-locale --encoding=UTF8
+    fi
+    if ! pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
+        echo "Starting postgres..."
+        pg_ctl -D "$PGDATA" -l "$PGDATA/logfile" -o "-k /tmp" start
+    else
+        echo "Postgres already running"
+    fi
+
+    echo "Waiting for postgres to be ready..."
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        psql -h /tmp -d postgres -c "SELECT 1" > /dev/null 2>&1 && break
+        sleep 1
+    done
+    if ! psql -h /tmp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'meela'" | grep -q 1; then
+        echo "Creating meela database..."
+        createdb -h /tmp meela
+    fi
 
 # Stop postgres
 db-stop:
-    docker compose down
+    pg_ctl -D {{pgdata}} stop 2>/dev/null || true
 
-# Run database migrations
+# Run db migrations
 migrate:
     cd backend && sqlx migrate run
 
@@ -14,13 +41,23 @@ migrate:
 backend:
     cd backend && cargo run
 
-# Start frontend dev server
+# Start frontend
 frontend:
     cd frontend && npm run dev
 
-# Start all services (postgres + backend + frontend)
-dev: db
-    @echo "Waiting for postgres..."
-    @sleep 2
+# Install frontend deps
+frontend-install:
+    cd frontend && npm install
+
+# Start entire dev env
+dev:
+    #!/usr/bin/env bash
+    just db
+    just migrate
+    just frontend-install
     just backend &
-    just frontend
+    BACKEND_PID=$!
+    just frontend &
+    FRONTEND_PID=$!
+    trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; just db-stop" EXIT
+    wait

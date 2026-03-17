@@ -4,6 +4,7 @@ import {
   createSubmission,
   getSubmission,
   updateSubmission,
+  submitSubmission,
   getQuestions,
   type Question as QuestionType,
 } from "./api";
@@ -21,6 +22,8 @@ function App() {
   const [questions, setQuestions] = createSignal<QuestionType[]>([]);
   const [step, setStep] = createSignal(0);
   const [currentStep, setCurrentStep] = createSignal(0);
+  const [submitted, setSubmitted] = createSignal(false);
+  const [submitting, setSubmitting] = createSignal(false);
 
   onMount(async () => {
     try {
@@ -32,20 +35,26 @@ function App() {
         if (submission) {
           setSubmissionId(submission.id);
           setAnswers(submission.answers);
-          // Resume at first unanswered question
-          const firstUnanswered = fetchedQuestions.findIndex(
-            (q) => !submission.answers[q.id]
-          );
-          const resumeStep =
-            firstUnanswered === -1 ? fetchedQuestions.length : firstUnanswered;
-          setStep(resumeStep);
-          setCurrentStep(resumeStep);
+          setSubmitted(submission.submitted);
+          if (submission.submitted) {
+            setStep(0);
+            setCurrentStep(fetchedQuestions.length);
+          } else {
+            const firstUnanswered = fetchedQuestions.findIndex(
+              (q) => !submission.answers[q.id]
+            );
+            const resumeStep =
+              firstUnanswered === -1 ? fetchedQuestions.length : firstUnanswered;
+            setStep(resumeStep);
+            setCurrentStep(resumeStep);
+          }
         } else {
           setError("Submission not found");
         }
       } else {
         const submission = await createSubmission();
         setSubmissionId(submission.id);
+        setSubmitted(submission.submitted);
         navigate(`/${submission.id}`, { replace: true });
       }
     } catch (e) {
@@ -57,7 +66,7 @@ function App() {
 
   const saveAnswer = async (key: string, value: unknown) => {
     const id = submissionId();
-    if (!id) return;
+    if (!id || submitted()) return;
 
     const newAnswers = { ...answers(), [key]: value };
     setAnswers(newAnswers);
@@ -66,6 +75,21 @@ function App() {
       await updateSubmission(id, newAnswers);
     } catch (e) {
       console.error("Failed to save:", e);
+    }
+  };
+
+  const handleSubmit = async () => {
+    const id = submissionId();
+    if (!id || submitted()) return;
+
+    setSubmitting(true);
+    try {
+      await submitSubmission(id);
+      setSubmitted(true);
+    } catch (e) {
+      console.error("Failed to submit:", e);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -114,9 +138,16 @@ function App() {
           </h1>
           <ThemeToggle />
         </div>
-        <p class="text-sm text-text-muted mb-6">
-          Your progress is saved automatically
-        </p>
+        <Show when={submitted()}>
+          <p class="text-sm text-text-success mb-6">
+            Your submission is complete (read-only)
+          </p>
+        </Show>
+        <Show when={!submitted()}>
+          <p class="text-sm text-text-muted mb-6">
+            Your progress is saved automatically
+          </p>
+        </Show>
 
         <Show when={loading()}>
           <p class="text-text-tertiary">Loading...</p>
@@ -149,6 +180,7 @@ function App() {
               question={currentQuestion()!}
               value={answers()[currentQuestion()!.id] as string | string[]}
               onAnswer={handleAnswer}
+              disabled={submitted()}
             />
 
             <div class="flex justify-between items-center mt-8">
@@ -167,7 +199,9 @@ function App() {
                   onClick={jumpToCurrent}
                   class="px-4 py-2 text-link hover:text-link-hover hover:underline transition-colors"
                 >
-                  Return to Question {currentStep() + 1}
+                  {currentStep() >= questions().length
+                    ? "Continue to submit"
+                    : `Return to Question ${currentStep() + 1}`}
                 </button>
               </Show>
 
@@ -183,19 +217,46 @@ function App() {
 
           <Show when={isComplete()}>
             <div class="text-center py-8">
-              <h2 class="text-2xl font-semibold text-text-success mb-4">
-                Thank you!
-              </h2>
-              <p class="text-text-secondary mb-6">
-                Your responses have been saved. We'll be in touch soon.
-              </p>
-              <button
-                type="button"
-                onClick={() => setStep(0)}
-                class="text-link hover:text-link-hover hover:underline transition-colors"
-              >
-                Review your answers
-              </button>
+              <Show when={submitted()}>
+                <h2 class="text-2xl font-semibold text-text-success mb-4">
+                  Submitted!
+                </h2>
+                <p class="text-text-secondary mb-6">
+                  Your responses have been submitted. We'll be in touch soon.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  class="text-link hover:text-link-hover hover:underline transition-colors"
+                >
+                  Review your answers
+                </button>
+              </Show>
+              <Show when={!submitted()}>
+                <h2 class="text-2xl font-semibold text-text-success mb-4">
+                  All questions answered!
+                </h2>
+                <p class="text-text-secondary mb-6">
+                  Please review your answers before submitting.
+                </p>
+                <div class="flex flex-col gap-4 items-center">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting()}
+                    class="px-6 py-2 bg-btn-primary-bg text-btn-primary-text rounded-lg hover:bg-btn-primary-bg-hover transition-colors focus:outline-none focus:ring-2 focus:ring-input-focus-ring focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50"
+                  >
+                    {submitting() ? "Submitting..." : "Submit Answers"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(0)}
+                    class="text-link hover:text-link-hover hover:underline transition-colors"
+                  >
+                    Review your answers
+                  </button>
+                </div>
+              </Show>
             </div>
           </Show>
         </Show>

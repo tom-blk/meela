@@ -29,12 +29,15 @@ enum Error {
     Dotenv(#[from] dotenv::Error),
     #[error("Not found")]
     NotFound,
+    #[error("Submission already submitted")]
+    AlreadySubmitted,
 }
 
 impl ResponseError for Error {
     fn status(&self) -> StatusCode {
         match self {
             Error::NotFound => StatusCode::NOT_FOUND,
+            Error::AlreadySubmitted => StatusCode::CONFLICT,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -103,6 +106,7 @@ async fn get_questions(Data(pool): Data<&PgPool>) -> Result<Json<Vec<Question>>,
 struct Submission {
     id: Uuid,
     answers: serde_json::Value,
+    submitted: bool,
 }
 
 #[derive(Deserialize)]
@@ -112,14 +116,15 @@ struct UpdateAnswers {
 
 #[handler]
 async fn create_submission(Data(pool): Data<&PgPool>) -> Result<Json<Submission>, Error> {
-    let row: (Uuid, serde_json::Value) =
-        sqlx::query_as("INSERT INTO submissions DEFAULT VALUES RETURNING id, answers")
+    let row: (Uuid, serde_json::Value, bool) =
+        sqlx::query_as("INSERT INTO submissions DEFAULT VALUES RETURNING id, answers, submitted")
             .fetch_one(pool)
             .await?;
 
     Ok(Json(Submission {
         id: row.0,
         answers: row.1,
+        submitted: row.2,
     }))
 }
 
@@ -128,14 +133,14 @@ async fn get_submission(
     Data(pool): Data<&PgPool>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Submission>, Error> {
-    let row: Option<(Uuid, serde_json::Value)> =
-        sqlx::query_as("SELECT id, answers FROM submissions WHERE id = $1")
+    let row: Option<(Uuid, serde_json::Value, bool)> =
+        sqlx::query_as("SELECT id, answers, submitted FROM submissions WHERE id = $1")
             .bind(id)
             .fetch_optional(pool)
             .await?;
 
     match row {
-        Some((id, answers)) => Ok(Json(Submission { id, answers })),
+        Some((id, answers, submitted)) => Ok(Json(Submission { id, answers, submitted })),
         None => Err(Error::NotFound),
     }
 }
@@ -146,18 +151,62 @@ async fn update_submission(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateAnswers>,
 ) -> Result<Json<Submission>, Error> {
-    let row: Option<(Uuid, serde_json::Value)> = sqlx::query_as(
-        "UPDATE submissions SET answers = $2, updated_at = NOW() WHERE id = $1 RETURNING id, answers",
+    let existing: Option<(bool,)> =
+        sqlx::query_as("SELECT submitted FROM submissions WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
+
+    match existing {
+        None => return Err(Error::NotFound),
+        Some((true,)) => return Err(Error::AlreadySubmitted),
+        Some((false,)) => {}
+    }
+
+    let row: (Uuid, serde_json::Value, bool) = sqlx::query_as(
+        "UPDATE submissions SET answers = $2, updated_at = NOW() WHERE id = $1 RETURNING id, answers, submitted",
     )
     .bind(id)
     .bind(&body.answers)
-    .fetch_optional(pool)
+    .fetch_one(pool)
     .await?;
 
-    match row {
-        Some((id, answers)) => Ok(Json(Submission { id, answers })),
-        None => Err(Error::NotFound),
+    Ok(Json(Submission {
+        id: row.0,
+        answers: row.1,
+        submitted: row.2,
+    }))
+}
+
+#[handler]
+async fn submit_submission(
+    Data(pool): Data<&PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Submission>, Error> {
+    let existing: Option<(bool,)> =
+        sqlx::query_as("SELECT submitted FROM submissions WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
+
+    match existing {
+        None => return Err(Error::NotFound),
+        Some((true,)) => return Err(Error::AlreadySubmitted),
+        Some((false,)) => {}
     }
+
+    let row: (Uuid, serde_json::Value, bool) = sqlx::query_as(
+        "UPDATE submissions SET submitted = TRUE, updated_at = NOW() WHERE id = $1 RETURNING id, answers, submitted",
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(Json(Submission {
+        id: row.0,
+        answers: row.1,
+        submitted: row.2,
+    }))
 }
 
 #[tokio::main]
@@ -179,6 +228,7 @@ async fn main() -> Result<(), Error> {
             "/api/submissions/:id",
             get(get_submission).patch(update_submission),
         )
+        .at("/api/submissions/:id/submit", post(submit_submission))
         .at("/favicon.ico", StaticFileEndpoint::new("www/favicon.ico"))
         .nest("/static/", StaticFilesEndpoint::new("www"))
         .at("*", StaticFileEndpoint::new("www/index.html"))

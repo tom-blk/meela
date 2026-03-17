@@ -13,6 +13,7 @@ export interface Question {
 export interface Submission {
   id: string;
   answers: Record<string, unknown>;
+  submitted: boolean;
 }
 
 export async function getQuestions(): Promise<Question[]> {
@@ -44,5 +45,13 @@ export async function updateSubmission(
     body: JSON.stringify({ answers }),
   });
   if (!res.ok) throw new Error("Failed to update submission");
+  return res.json();
+}
+
+export async function submitSubmission(id: string): Promise<Submission> {
+  const res = await fetch(`${API_BASE}/submissions/${id}/submit`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to submit");
   return res.json();
 }
