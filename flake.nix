@@ -40,7 +40,7 @@
                 ${pkgs.postgresql_16}/bin/initdb -D "$PGDATA" --no-locale --encoding=UTF8
               fi
               if ! ${pkgs.postgresql_16}/bin/pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
-                ${pkgs.postgresql_16}/bin/pg_ctl -D "$PGDATA" -l "$PGDATA/logfile" -o "-k /tmp" start
+                ${pkgs.postgresql_16}/bin/pg_ctl -D "$PGDATA" -l "$PGDATA/logfile" -o "-k /tmp -c listen_addresses='''" start
               else
                 echo "Postgres already running"
               fi
