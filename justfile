@@ -17,7 +17,7 @@ db:
     fi
     if ! pg_ctl -D "$PGDATA" status > /dev/null 2>&1; then
         echo "Starting postgres..."
-        pg_ctl -D "$PGDATA" -l "$PGDATA/logfile" -o "-k /tmp" start
+        pg_ctl -D "$PGDATA" -l "$PGDATA/logfile" -o "-k /tmp -c listen_addresses=''" start
     else
         echo "Postgres already running"
     fi
