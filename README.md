@@ -13,18 +13,16 @@
 
 ## Usage
 
-### Justfile
+### Justfile (recommended)
 Run `just dev`, dependencies are:
 - just
-- postgres 16+
-- rust / cargo
+- docker
 - node.js / npm
-- sqlx-cli
 
 The app will be available at http://localhost:5173
 
 ### Nix
-Run `nix develop` then `meela dev` - no dependencies. (I know this is likely not going to be used, but I am on nixos and I'll include it for the sake of completeness)
+Run `nix develop` then `meela dev` - no additional dependencies, works on any system with nix installed and flakes enabled.
 
 The app will be available at http://localhost:5173
 
