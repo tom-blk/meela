@@ -134,7 +134,7 @@ function App() {
         {/* Header with theme toggle */}
         <div class="flex justify-between items-start mb-2">
           <h1 class="text-3xl font-semibold text-text-primary">
-            Client Intake Form
+            Your Background
           </h1>
           <ThemeToggle />
         </div>

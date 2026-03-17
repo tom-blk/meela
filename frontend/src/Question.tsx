@@ -9,7 +9,7 @@ interface Props {
   disabled?: boolean;
 }
 
-const SEARCH_THRESHOLD = 6;
+const SEARCH_THRESHOLD = 12;
 
 export default function QuestionComponent(props: Props) {
   const [selected, setSelected] = createSignal<string[]>([]);
