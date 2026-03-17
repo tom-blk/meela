@@ -42,3 +42,9 @@ To make this production-ready, I'd probably make a few additional adjustments:
 - use tanstack-query on the frontend
 - use axum on the backend (what I am used to, but I have never used poem before and was curious)
 - add a toasting library for errors
+- slim down dependencies
+- graceful shutdown
+
+Additional Note: When opening the frontend a new uuid URL parameter will be generated, if switching or clearing the database and refreshing, an error will be thrown because the database doesn't recognize the uuid left over in the URL parameter.
+
+Tested on NixOS, Arch Linux and Ubuntu
