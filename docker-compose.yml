@@ -23,16 +23,5 @@ services:
       postgres:
         condition: service_healthy
 
-  migrations:
-    image: ghcr.io/launchbadge/sqlx-cli:latest
-    environment:
-      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/meela"
-    volumes:
-      - ./backend/migrations:/migrations
-    command: ["sqlx", "migrate", "run", "--source", "/migrations"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-
 volumes:
   postgres_data:
