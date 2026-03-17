@@ -2,6 +2,9 @@
 
 set dotenv-load
 
+# Add postgres bin paths for Ubuntu/Debian
+export PATH := "/usr/lib/postgresql/16/bin:/usr/lib/postgresql/15/bin:" + env_var("PATH")
+
 pgdata := ".pgdata"
 
 # Start postgres
