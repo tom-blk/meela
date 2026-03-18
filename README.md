@@ -14,15 +14,15 @@
 ## Usage
 
 ### Justfile (recommended)
-Run `just dev`, dependencies are:
+Run `just dev` in the project repository, dependencies are:
 - just
-- docker
+- docker + docker compose, the current user should be added to the docker group (`sudo usermod -aG docker $USER` on linux)
 - node.js / npm
 
 The app will be available at http://localhost:5173
 
-### Nix
-Run `nix develop` then `meela dev` - no additional dependencies, works on any system with nix installed and flakes enabled.
+### Nix (alternative to just, only recommended if dependencies for just aren't met and should not be installed)
+Run `nix develop` in the project repository, then `meela dev` - no additional dependencies, works on any system with nix installed and flakes enabled.
 
 The app will be available at http://localhost:5173
 
