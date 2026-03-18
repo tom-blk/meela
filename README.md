@@ -17,7 +17,7 @@
 Run `just dev` in the project repository, dependencies are:
 - just
 - docker + docker compose, the current user should be added to the docker group (`sudo usermod -aG docker $USER` on linux)
-- node.js / npm
+- node.js 20+ / npm
 
 The app will be available at http://localhost:5173
 
